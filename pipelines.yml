@@ -1,0 +1,43 @@
+resources:
+  - name: webhook_test_internal
+    type: Webhook
+    configuration:
+      webhookName: kirti_int_hook
+      payload: '{}'
+
+  - name: webhook_test_external
+    type: Webhook
+    configuration:
+      webhookName: kirti_ext_hook
+      payload: '{"text":"default payload "}'
+
+pipelines:
+   - name: tr_test_webhooks
+     steps:
+      - name: incoming_hook
+        type: Bash
+        configuration:
+          inputResources:
+            - name: webhook_test_internal
+        execution:
+          onExecute:
+            - echo "whats in the resource?"
+            - printenv | grep res_webhook_test_internal
+            - echo "$res_webhook_test_internal_payload" | jq '.'
+            - echo "ahhhhh, i see"
+            - apt-get install -y tree
+            - tree /reqexec
+            - tree /jfrog
+
+
+      - name: outgoing_hook
+        type: Bash
+        configuration:
+          inputSteps:
+            - name: incoming_hook
+          outputResources:
+            - name: webhook_test_external
+        execution:
+          onExecute:
+            - echo "lets write some values to the payload"
+            - write_output webhook_test_external "payload={\"stepId\":\"$STEP_ID\",\"stepName\":\"$STEP_NAME\",\"message\"=\"blah blah blah\"}"
